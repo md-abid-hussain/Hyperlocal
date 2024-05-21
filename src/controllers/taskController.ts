@@ -28,7 +28,7 @@ const createTask = async (req: Request, res: Response) => {
     });
   }
 
-  if (!isValidObjectId(category)){
+  if (!isValidObjectId(category)) {
     throw new BadRequestError({
       code: 400,
       message: 'Invalid category Id',
@@ -68,7 +68,7 @@ const createTask = async (req: Request, res: Response) => {
     await newTask.save();
   }
 
-  return res.json({ task:newTask });
+  return res.json({ task: newTask });
 };
 
 // @desc UPDATE TASK
@@ -165,7 +165,7 @@ const deleteTask = async (req: Request, res: Response) => {
   }
 
   const task = await Task.findById(taskId);
-  
+
   if (!task) {
     throw new BadRequestError({
       code: 404,
@@ -181,7 +181,7 @@ const deleteTask = async (req: Request, res: Response) => {
     });
   }
 
-  await task.deleteOne();
+  await task.deleteTask();
 
   return res.json({ message: 'Task deleted successfully' });
 };
@@ -192,7 +192,7 @@ const deleteTask = async (req: Request, res: Response) => {
 const applyForTask = async (req: Request, res: Response) => {
   const { taskId } = req.body;
   const helperId = res.locals.id;
-  
+
   if (!taskId || !helperId || !isValidObjectId(taskId) || !isValidObjectId(helperId)) {
     throw new BadRequestError({
       code: 400,

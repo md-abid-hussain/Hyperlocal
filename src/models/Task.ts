@@ -1,6 +1,7 @@
 import { Schema, model } from 'mongoose';
 import PointSchema from './pointSchema';
 import { BadRequestError } from '../errors/CustomError';
+import Helper from './Helper';
 
 interface ILocation {
   type: string;
@@ -20,6 +21,7 @@ interface ITask {
   assignedHelper: Schema.Types.ObjectId;
   applyHelper(helperId: Schema.Types.ObjectId): Promise<this>;
   cancelHelper(helperId: Schema.Types.ObjectId): Promise<this>;
+  deleteTask(): Promise<this>;
 }
 
 // Task schema
@@ -69,17 +71,52 @@ taskSchema.methods.cancelHelper = function (helperId: Schema.Types.ObjectId) {
 };
 
 // Method to assign helper to task
-taskSchema.methods.assignHelper = function (helperId:Schema.Types.ObjectId){
+taskSchema.methods.assignHelper = function (helperId: Schema.Types.ObjectId) {
   this.assignedHelper = helperId;
   this.status = 'IN_PROGRESS';
   return this.save();
-}
+};
 
 // Method to complete task
-taskSchema.methods.completeTask = function (){
+taskSchema.methods.completeTask = function () {
   this.status = 'DONE';
   return this.save();
-}
+};
+
+// Method to delete task
+// If task is assigned to someone it can't be deleted
+// Otherwise cancel all the applied helpers
+taskSchema.methods.deleteTask = async function () {
+  if (this.assignedHelper) {
+    throw new BadRequestError({
+      code: 400,
+      message: 'Cannot delete task with assigned helper',
+    });
+  }
+
+  const taskAppliedHelpers = this.appliedHelpers;
+
+  try {
+    await Promise.all(
+      taskAppliedHelpers.map(async (helperId: Schema.Types.ObjectId) => {
+        const helper = await Helper.findById(helperId);
+        if (helper) {
+          await helper.cancelTask(this._id);
+        }
+      }),
+    );
+  } catch (error) {
+    if (error instanceof BadRequestError) {
+      throw new BadRequestError({
+        code: 500,
+        message: 'Failed to delete task',
+        context: { error: error.message },
+      });
+    } else {
+      throw error;
+    }
+  }
+};
 
 const Task = model<ITask>('Task', taskSchema);
 
