@@ -1,6 +1,7 @@
 import { Schema, model } from 'mongoose';
 import pointSchema from './pointSchema';
 import { BadRequestError } from '../errors/CustomError';
+import Task from './Task';
 
 interface ILocation {
   type: string;
@@ -18,8 +19,11 @@ interface IHelper {
   availability: boolean;
   rating: number;
   appliedTasks: Schema.Types.ObjectId[];
+  assignedTasks: Schema.Types.ObjectId[];
+  completedTasks: Schema.Types.ObjectId[];
   applyForTask(taskId: Schema.Types.ObjectId): Promise<this>;
   cancelTask(taskId: Schema.Types.ObjectId): Promise<this>;
+  deleteAccount(): Promise<this>;
 }
 
 const helperSchema = new Schema<IHelper>(
@@ -36,6 +40,16 @@ const helperSchema = new Schema<IHelper>(
     availability: { type: Boolean, default: true },
     rating: { type: Number, default: 0 },
     appliedTasks: {
+      type: [Schema.Types.ObjectId],
+      ref: 'Task',
+      default: [],
+    },
+    assignedTasks: {
+      type: [Schema.Types.ObjectId],
+      ref: 'Task',
+      default: [],
+    },
+    completedTasks: {
       type: [Schema.Types.ObjectId],
       ref: 'Task',
       default: [],
@@ -64,6 +78,43 @@ helperSchema.methods.applyForTask = function (taskId: Schema.Types.ObjectId) {
 helperSchema.methods.cancelTask = function (taskId: Schema.Types.ObjectId) {
   this.appliedTasks = this.appliedTasks.filter((id: Schema.Types.ObjectId) => String(id) !== String(taskId));
   return this.save();
+};
+
+// Method to delete helper
+// This method will also cleared all the applied tasks
+// Helper are not allowed to delete their account if they have assigned tasks
+helperSchema.methods.deleteAccount = async function () {
+  if (this.assignedTasks.length > 0) {
+    throw new BadRequestError({
+      code: 400,
+      message: 'Cannot delete helper with assigned tasks',
+    });
+  }
+
+  const helperAppliedTask = this.appliedTasks;
+
+  try {
+    await Promise.all(
+      helperAppliedTask.map(async (taskId: Schema.Types.ObjectId) => {
+        const task = await Task.findById(taskId);
+        if (task) {
+          await task.cancelHelper(this._id);
+        }
+      }),
+    );
+  } catch (error) {
+    if (error instanceof BadRequestError) {
+      throw new BadRequestError({
+        code: 500,
+        message: 'Failed to delete helper account',
+        context: {
+          error: error.message,
+        },
+      });
+    } else {
+      throw error;
+    }
+  }
 };
 
 const Helper = model<IHelper>('Helper', helperSchema);

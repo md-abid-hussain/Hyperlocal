@@ -71,7 +71,7 @@ const createHelper = async (req: Request, res: Response) => {
 // @access Private
 const updateHelper = async (req: Request, res: Response) => {
   const { name, email, username, latitude, longitude } = req.body;
-  const helperId = res.locals.id
+  const helperId = res.locals.id;
 
   if (!helperId || !isValidObjectId(helperId)) {
     throw new BadRequestError({
@@ -127,7 +127,7 @@ const updateHelper = async (req: Request, res: Response) => {
 // @route DELETE /helper
 // @access Private
 const deleteHelper = async (req: Request, res: Response) => {
-  const helperId = res.locals.id
+  const helperId = res.locals.id;
 
   if (!helperId || !isValidObjectId(helperId)) {
     throw new BadRequestError({
@@ -147,7 +147,7 @@ const deleteHelper = async (req: Request, res: Response) => {
     });
   }
 
-  await helper.deleteOne();
+  await helper.deleteAccount();
 
   return res.json({ message: 'Helper deleted' });
 };
