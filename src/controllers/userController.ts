@@ -147,7 +147,7 @@ const deleteUser = async (req: Request, res: Response) => {
     });
   }
 
-  await user.deleteOne();
+  await user.deleteAccount();
 
   res.clearCookie('jwt', { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'none' });
 
