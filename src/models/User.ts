@@ -1,4 +1,4 @@
-import { Schema, model } from 'mongoose';
+import { Schema, model, Document } from 'mongoose';
 import PointSchema from './pointSchema';
 import Task from './Task';
 import { BadRequestError } from '../errors/CustomError';
@@ -8,13 +8,14 @@ interface ILocation {
   coordinates: number[];
 }
 
-interface IUser {
+interface IUser extends Document {
   name: string;
   email: string;
   username: string;
   password: string;
   location?: ILocation;
-  deleteAccount(): Promise<void>;
+  isActive: boolean;
+  deleteAccount(this: IUser): Promise<void>;
 }
 
 const userSchema = new Schema<IUser>(
@@ -26,6 +27,7 @@ const userSchema = new Schema<IUser>(
     location: {
       type: PointSchema,
     },
+    isActive: { type: Boolean, default: true },
   },
   { timestamps: true },
 );
@@ -35,7 +37,7 @@ userSchema.index({ location: '2dsphere' });
 // Method to delete account
 // This method will delete all tasks created by the user
 // User will not be able to delete the account if there is any task assigned to helper
-userSchema.methods.deleteAccount = async function () {
+userSchema.methods.deleteAccount = async function (this: IUser) {
   const userId = this._id;
 
   const userCreatedTasks = await Task.find({ owner: userId });
@@ -57,6 +59,9 @@ userSchema.methods.deleteAccount = async function () {
       throw error;
     }
   }
+
+  this.isActive = false;
+  this.save();
 };
 
 const User = model<IUser>('User', userSchema);
