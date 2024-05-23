@@ -1,5 +1,5 @@
-import { Schema, model } from 'mongoose';
-import pointSchema from './pointSchema';
+import { Schema, model, Document } from 'mongoose';
+import PointSchema from './pointSchema';
 import { BadRequestError } from '../errors/CustomError';
 import Task from './Task';
 
@@ -8,7 +8,7 @@ interface ILocation {
   coordinates: number[];
 }
 
-interface IHelper {
+interface IHelper extends Document {
   name: string;
   email: string;
   username: string;
@@ -21,9 +21,12 @@ interface IHelper {
   appliedTasks: Schema.Types.ObjectId[];
   assignedTasks: Schema.Types.ObjectId[];
   completedTasks: Schema.Types.ObjectId[];
-  applyForTask(taskId: Schema.Types.ObjectId): Promise<this>;
-  cancelTask(taskId: Schema.Types.ObjectId): Promise<this>;
-  deleteAccount(): Promise<this>;
+  isVerified: boolean;
+  isActive: boolean;
+  isProfileComplete: boolean;
+  applyForTask(this: IHelper, taskId: Schema.Types.ObjectId): Promise<this>;
+  cancelTask(this: IHelper, taskId: Schema.Types.ObjectId): Promise<this>;
+  deleteAccount(this: IHelper): Promise<this>;
 }
 
 const helperSchema = new Schema<IHelper>(
@@ -33,7 +36,7 @@ const helperSchema = new Schema<IHelper>(
     username: { type: String, required: true },
     password: { type: String, required: true, select: false },
     location: {
-      type: pointSchema,
+      type: PointSchema,
     },
     skills: { type: [String], default: [] },
     experience: { type: String, default: '' },
@@ -54,6 +57,9 @@ const helperSchema = new Schema<IHelper>(
       ref: 'Task',
       default: [],
     },
+    isVerified: { type: Boolean, default: false },
+    isProfileComplete: { type: Boolean, default: false },
+    isActive: { type: Boolean, default: true },
   },
   {
     timestamps: true,
@@ -63,19 +69,19 @@ const helperSchema = new Schema<IHelper>(
 helperSchema.index({ location: '2dsphere' });
 
 // Method to apply for task
-helperSchema.methods.applyForTask = function (taskId: Schema.Types.ObjectId) {
-  if (!this.appliedTasks.includes(taskId)) {
-    this.appliedTasks.push(taskId);
-    return this.save();
+helperSchema.methods.applyForTask = function (this: IHelper, taskId: Schema.Types.ObjectId) {
+  if (this.appliedTasks.includes(taskId)) {
+    throw new BadRequestError({
+      code: 400,
+      message: 'Already applied to task',
+    });
   }
-  throw new BadRequestError({
-    code: 400,
-    message: 'Already applied to task',
-  });
+  this.appliedTasks.push(taskId);
+  return this.save();
 };
 
 // Method to cancel task application
-helperSchema.methods.cancelTask = function (taskId: Schema.Types.ObjectId) {
+helperSchema.methods.cancelTask = function (this: IHelper, taskId: Schema.Types.ObjectId) {
   this.appliedTasks = this.appliedTasks.filter((id: Schema.Types.ObjectId) => String(id) !== String(taskId));
   return this.save();
 };
@@ -83,7 +89,7 @@ helperSchema.methods.cancelTask = function (taskId: Schema.Types.ObjectId) {
 // Method to delete helper
 // This method will also cleared all the applied tasks
 // Helper are not allowed to delete their account if they have assigned tasks
-helperSchema.methods.deleteAccount = async function () {
+helperSchema.methods.deleteAccount = async function (this: IHelper) {
   if (this.assignedTasks.length > 0) {
     throw new BadRequestError({
       code: 400,
@@ -115,6 +121,9 @@ helperSchema.methods.deleteAccount = async function () {
       throw error;
     }
   }
+  this.isActive = false;
+  this.availability = false;
+  this.save();
 };
 
 const Helper = model<IHelper>('Helper', helperSchema);
