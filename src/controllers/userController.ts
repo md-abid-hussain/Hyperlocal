@@ -42,7 +42,7 @@ const createUser = async (req: Request, res: Response) => {
     name,
     email,
     username,
-    password: bcrypt.hashSync(password, 10),
+    password: await bcrypt.hash(password, 10),
   });
 
   if (latitude && longitude) {
