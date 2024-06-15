@@ -31,7 +31,7 @@ const seed = async () => {
       { name: 'June Doe', email: 'junedoe@mail.com', username: 'junedoe', password: await bcrypt.hash('password', 10) },
       { name: 'Alice Doe', email: 'alicedoe@mail.com', username: 'alicedoe', password: await bcrypt.hash('password', 10) },
     ];
-    const helperList = await Helper.insertMany(helper);
+    await Helper.insertMany(helper);
 
     const tasks = [
       {
@@ -46,7 +46,6 @@ const seed = async () => {
         specialInstructions: ['Task 1 special instruction'],
         owner: userList[0]._id,
         budget: 100,
-        appliedHelpers: [helperList[0]._id],
       },
       {
         title: 'Task 2',
@@ -60,7 +59,6 @@ const seed = async () => {
         specialInstructions: ['Task 2 special instruction'],
         owner: userList[1]._id,
         budget: 200,
-        appliedHelpers: [helperList[1]._id],
       },
       {
         title: 'Task 3',
@@ -74,11 +72,11 @@ const seed = async () => {
         specialInstructions: ['Task 3 special instruction'],
         owner: userList[2]._id,
         budget: 300,
-        appliedHelpers: [helperList[2]._id],
       },
     ];
 
     await Task.insertMany(tasks);
+
     console.log('Data seeded successfully');
   } catch (error) {
     console.log(error);
