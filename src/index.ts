@@ -5,6 +5,8 @@ import express, { type Express, type Request, type Response } from 'express';
 import mongoose from 'mongoose';
 import connectDB from './config/db';
 import cookieParser from 'cookie-parser';
+import corsOptions from './config/corsOptions';
+import cors from 'cors';
 import { logger } from './middlewares/logEvent';
 import { errorHandler } from './middlewares/errorHandler';
 import { BadRequestError } from './errors/CustomError';
@@ -12,6 +14,8 @@ import authRoutes from './routes/authRoutes';
 import userRoutes from './routes/userRoutes';
 import helperRoutes from './routes/helperRoutes'
 import taskRoutes from './routes/taskRoutes';
+import reviewRoutes from './routes/reviewRoutes';
+
 
 connectDB();
 
@@ -20,6 +24,7 @@ app.use(logger);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+app.use(cors(corsOptions));
 
 const port = process.env.PORT ?? 3000;
 
@@ -32,6 +37,7 @@ app.use('/auth', authRoutes);
 app.use('/users', userRoutes);
 app.use('/helpers', helperRoutes);
 app.use('/tasks', taskRoutes);
+app.use('/reviews', reviewRoutes);
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 app.all('*', (req: Request, res: Response) => {
