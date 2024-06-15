@@ -21,6 +21,6 @@ export const logEvents = async (message: string, logFile: string): Promise<void>
 
 export const logger = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   await logEvents(`${req.method}\t${req.get('origin')}\t${req.url}`, 'reqLog.txt')
-  console.log(`${req.method} ${req.path}`)
+  console.log(`${req.method}\t${req.path}`)
   next()
 }
