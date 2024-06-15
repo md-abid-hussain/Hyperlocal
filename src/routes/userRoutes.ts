@@ -10,4 +10,7 @@ router.route('/')
   .patch(verifyJWT,userController.updateUser)
   .delete(verifyJWT,userController.deleteUser)
 
+router.route('/me')
+  .get(verifyJWT,userController.getCurrentUser)
+
 export default router
