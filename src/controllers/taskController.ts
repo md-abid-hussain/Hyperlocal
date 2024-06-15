@@ -6,15 +6,21 @@ import Category from '../models/Category';
 import Helper from '../models/Helper';
 
 // @desc GET ALL TASKS
-// @route GET /task
+// @route GET /tasks
 // @access Private
 const getAllTask = async (req: Request, res: Response) => {
-  const tasks = await Task.find();
-  return res.json({ tasks: tasks });
+  if (res.locals.role === 'HELPER') {
+    const tasks = await Task.find().populate('owner', 'name email').populate('category', 'name');
+    return res.json({ tasks: tasks });
+  }
+  const userTask = await Task.find({ owner: res.locals.id })
+    .populate('owner', 'name email')
+    .populate('category', 'name');
+  return res.json({ tasks: userTask });
 };
 
 // @desc CREATE TASK
-// @route POST /task
+// @route POST /tasks
 // @access Private
 const createTask = async (req: Request, res: Response) => {
   const { title, description, category, latitude, longitude, specialInstructions } = req.body;
@@ -58,7 +64,7 @@ const createTask = async (req: Request, res: Response) => {
     category: category,
     location: {
       type: 'Point',
-      coordinates: [longitude, latitude],
+      coordinates: [latitude, longitude],
     },
     owner,
   });
@@ -72,7 +78,7 @@ const createTask = async (req: Request, res: Response) => {
 };
 
 // @desc UPDATE TASK
-// @route PATCH /task
+// @route PATCH /tasks
 // @access Private
 const updateTask = async (req: Request, res: Response) => {
   const { taskId, title, description, category, latitude, longitude, status, specialInstructions } = req.body;
@@ -149,7 +155,7 @@ const updateTask = async (req: Request, res: Response) => {
 };
 
 // @desc DELETE TASK
-// @route DELETE /task
+// @route DELETE /tasks
 // @access Private
 const deleteTask = async (req: Request, res: Response) => {
   const { taskId } = req.body;
@@ -187,7 +193,7 @@ const deleteTask = async (req: Request, res: Response) => {
 };
 
 // @desc APPLY FOR TASK
-// @route POST /task/apply
+// @route PATCH /tasks/apply
 // @access Private
 const applyForTask = async (req: Request, res: Response) => {
   const { taskId } = req.body;
@@ -227,7 +233,7 @@ const applyForTask = async (req: Request, res: Response) => {
 };
 
 // @desc CANCEL APPLICATION
-// @route DELETE /task/apply
+// @route DELETE /tasks/apply
 // @access Private
 const cancelApplication = async (req: Request, res: Response) => {
   const { taskId } = req.body;
@@ -267,7 +273,7 @@ const cancelApplication = async (req: Request, res: Response) => {
 };
 
 // @desc GET TASK CATEGORIES
-// @route GET /task/categories
+// @route GET /tasks/categories
 // @access Private
 const getAllTaskCategories = async (req: Request, res: Response) => {
   const categories = await Category.find();
