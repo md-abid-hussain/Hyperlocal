@@ -15,8 +15,65 @@ export interface ITokenPayload {
 const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET as string;
 const ACCESS_TOKEN_SECRET = process.env.ACCESS_TOKEN_SECRET as string;
 
+// @desc Register
+// @route POST /auth/register
+// @access Public
+const register = async (req: Request, res: Response) => {
+  const { name, email, username, password, isHelper } = req.body;
+
+  if (!name || !email || !username || !password) {
+    throw new BadRequestError({
+      code: 400,
+      message: 'All fields are required',
+      context: { fields: ['name', 'email', 'username', 'password'] },
+    });
+  }
+
+  let existingUser;
+
+  if (isHelper) {
+    existingUser = await Helper.findOne({
+      $or: [{ username }, { email }],
+    });
+  } else {
+    existingUser = await User.findOne({
+      $or: [{ username }, { email }],
+    });
+  }
+
+  if (existingUser) {
+    throw new BadRequestError({
+      code: 409,
+      message: `${isHelper ? 'Helper' : 'User'} already exists`,
+      context: { email, username },
+    });
+  }
+
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  if (isHelper) {
+    await Helper.create({
+      name,
+      email,
+      username,
+      password: hashedPassword,
+    });
+
+    return res.json({ message: 'Helper created successfully' });
+  }
+
+  await User.create({
+    name,
+    email,
+    username,
+    password: hashedPassword,
+  });
+
+  return res.json({ message: 'User created' });
+};
+
 // @desc Login
-// @route POST /auth
+// @route POST /auth/login
 // @access Public
 const login = async (req: Request, res: Response) => {
   const { username, password, isHelper } = req.body;
@@ -159,4 +216,4 @@ const logout = async (req: Request, res: Response) => {
   return res.json({ message: 'Log out successfully' });
 };
 
-export default { login, refresh, logout };
+export default { register, login, refresh, logout };
