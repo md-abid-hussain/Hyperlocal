@@ -1,5 +1,5 @@
 import { Schema, model, Document } from 'mongoose';
-import PointSchema from './pointSchema';
+import PointSchema from './PointSchema';
 import { BadRequestError } from '../errors/CustomError';
 import Task from './Task';
 
@@ -24,6 +24,8 @@ interface IHelper extends Document {
   isVerified: boolean;
   isActive: boolean;
   isProfileComplete: boolean;
+  totalPeopleRated: number;
+  totalRating: number;
   applyForTask(this: IHelper, taskId: Schema.Types.ObjectId): Promise<this>;
   cancelTask(this: IHelper, taskId: Schema.Types.ObjectId): Promise<this>;
   deleteAccount(this: IHelper): Promise<this>;
@@ -60,6 +62,8 @@ const helperSchema = new Schema<IHelper>(
     isVerified: { type: Boolean, default: false },
     isProfileComplete: { type: Boolean, default: false },
     isActive: { type: Boolean, default: true },
+    totalPeopleRated: { type: Number, default: 0 },
+    totalRating: { type: Number, default: 0 },
   },
   {
     timestamps: true,
