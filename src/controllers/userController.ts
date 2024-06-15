@@ -5,7 +5,7 @@ import { BadRequestError } from '../errors/CustomError';
 import { isValidObjectId } from 'mongoose';
 
 // @desc GET ALL USERS
-// @route GET /user
+// @route GET /users
 // @access Public
 const getAllUser = async (req: Request, res: Response) => {
   const users = await User.find();
@@ -13,7 +13,7 @@ const getAllUser = async (req: Request, res: Response) => {
 };
 
 // @desc CREATE USER
-// @route POST /user
+// @route POST /users
 // @access Public
 const createUser = async (req: Request, res: Response) => {
   const { name, email, username, password, latitude, longitude } = req.body;
@@ -68,10 +68,10 @@ const createUser = async (req: Request, res: Response) => {
 };
 
 // @desc UPDATE USER
-// @route PATCH /user
+// @route PATCH /users
 // @access Private
 const updateUser = async (req: Request, res: Response) => {
-  const { name, email, username, latitude, longitude } = req.body;
+  const { name, email, username, latitude, longitude, newPassword, oldPassword } = req.body;
   const userId = res.locals.id;
   if (!userId || !isValidObjectId(userId)) {
     throw new BadRequestError({
@@ -81,7 +81,7 @@ const updateUser = async (req: Request, res: Response) => {
     });
   }
 
-  const user = await User.findById(userId);
+  const user = await User.findById(userId).select('+password');
 
   if (!user) {
     throw new BadRequestError({
@@ -118,13 +118,27 @@ const updateUser = async (req: Request, res: Response) => {
     };
   }
 
+  if (newPassword && oldPassword) {
+    const isMatch = await bcrypt.compare(oldPassword, user.password);
+
+    if (!isMatch) {
+      throw new BadRequestError({
+        code: 400,
+        message: 'Invalid password',
+        context: { oldPassword },
+      });
+    }
+
+    user.password = await bcrypt.hash(newPassword, 10);
+  }
+
   await user.save();
 
   return res.json({ user });
 };
 
 // @desc DELETE USER
-// @route DELETE /user
+// @route DELETE /users
 // @access Private
 const deleteUser = async (req: Request, res: Response) => {
   const userId = res.locals.id;
@@ -154,4 +168,22 @@ const deleteUser = async (req: Request, res: Response) => {
   return res.json({ message: 'User deleted' });
 };
 
-export default { getAllUser, createUser, updateUser, deleteUser };
+// @desc GET CURRENT USER
+// @route GET /users/me
+// @access Private
+const getCurrentUser = async (req: Request, res: Response) => {
+  const userId = res.locals.id;
+
+  const user = await User.findById(userId);
+
+  if (!user) {
+    throw new BadRequestError({
+      code: 400,
+      message: 'User not found',
+      context: { userId },
+    });
+  }
+
+  return res.json({ user });
+};
+export default { getAllUser, createUser, updateUser, deleteUser, getCurrentUser };
