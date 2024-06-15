@@ -1,6 +1,6 @@
 import { Schema } from 'mongoose';
 
-const pointSchema = new Schema({
+const PointSchema = new Schema({
   type: {
     type: String,
     enum: ['Point'],
@@ -16,4 +16,4 @@ const pointSchema = new Schema({
   },
 });
 
-export default pointSchema;
+export default PointSchema;
