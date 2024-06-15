@@ -5,7 +5,7 @@ import { isValidObjectId } from 'mongoose';
 import { BadRequestError } from '../errors/CustomError';
 
 // @desc GET ALL HELPERS
-// @route GET /helper
+// @route GET /helpers
 // @access Public
 const getAllHelper = async (req: Request, res: Response) => {
   const helpers = await Helper.find();
@@ -13,7 +13,7 @@ const getAllHelper = async (req: Request, res: Response) => {
 };
 
 // @desc CREATE HELPER
-// @route POST /helper
+// @route POST /helpers
 // @access Public
 const createHelper = async (req: Request, res: Response) => {
   const { name, email, username, password, latitude, longitude } = req.body;
@@ -67,7 +67,7 @@ const createHelper = async (req: Request, res: Response) => {
 };
 
 // @desc UPDATE HELPER
-// @route PATCH /helper
+// @route PATCH /helpers
 // @access Private
 const updateHelper = async (req: Request, res: Response) => {
   const { name, email, username, latitude, longitude } = req.body;
@@ -124,7 +124,7 @@ const updateHelper = async (req: Request, res: Response) => {
 };
 
 // @desc DELETE HELPER
-// @route DELETE /helper
+// @route DELETE /helpers
 // @access Private
 const deleteHelper = async (req: Request, res: Response) => {
   const helperId = res.locals.id;
