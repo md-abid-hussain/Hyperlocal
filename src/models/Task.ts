@@ -1,6 +1,6 @@
-import { Schema, model } from 'mongoose';
-import PointSchema from './pointSchema';
+import { Schema, model, Document } from 'mongoose';
 import { BadRequestError } from '../errors/CustomError';
+import PointSchema from './PointSchema';
 import Helper from './Helper';
 
 interface ILocation {
@@ -8,7 +8,7 @@ interface ILocation {
   coordinates: number[];
 }
 
-interface ITask {
+interface ITask extends Document {
   title: string;
   description: string;
   category: Schema.Types.ObjectId;
@@ -19,9 +19,9 @@ interface ITask {
   budget: number;
   appliedHelpers: Schema.Types.ObjectId[];
   assignedHelper: Schema.Types.ObjectId;
-  applyHelper(helperId: Schema.Types.ObjectId): Promise<this>;
-  cancelHelper(helperId: Schema.Types.ObjectId): Promise<this>;
-  deleteTask(): Promise<this>;
+  applyHelper(this: ITask, helperId: Schema.Types.ObjectId): Promise<this>;
+  cancelHelper(this: ITask, helperId: Schema.Types.ObjectId): Promise<this>;
+  deleteTask(this: ITask): Promise<this>;
 }
 
 // Task schema
@@ -53,32 +53,32 @@ const taskSchema = new Schema<ITask>(
 taskSchema.index({ location: '2dsphere' });
 
 // Method to apply for task
-taskSchema.methods.applyHelper = function (helperId: Schema.Types.ObjectId) {
-  if (!this.appliedHelpers.includes(helperId)) {
-    this.appliedHelpers.push(helperId);
-    return this.save();
+taskSchema.methods.applyHelper = function (this: ITask, helperId: Schema.Types.ObjectId) {
+  if (this.appliedHelpers.includes(helperId)) {
+    throw new BadRequestError({
+      code: 400,
+      message: 'Helper already applied',
+    });
   }
-  throw new BadRequestError({
-    code: 400,
-    message: 'Helper already applied',
-  });
+  this.appliedHelpers.push(helperId);
+  return this.save();
 };
 
 // Method to cancel application for task
-taskSchema.methods.cancelHelper = function (helperId: Schema.Types.ObjectId) {
+taskSchema.methods.cancelHelper = function (this: ITask, helperId: Schema.Types.ObjectId) {
   this.appliedHelpers = this.appliedHelpers.filter((id: Schema.Types.ObjectId) => String(id) !== String(helperId));
   return this.save();
 };
 
 // Method to assign helper to task
-taskSchema.methods.assignHelper = function (helperId: Schema.Types.ObjectId) {
+taskSchema.methods.assignHelper = function (this: ITask, helperId: Schema.Types.ObjectId) {
   this.assignedHelper = helperId;
   this.status = 'IN_PROGRESS';
   return this.save();
 };
 
 // Method to complete task
-taskSchema.methods.completeTask = function () {
+taskSchema.methods.completeTask = function (this: ITask) {
   this.status = 'DONE';
   return this.save();
 };
@@ -86,7 +86,7 @@ taskSchema.methods.completeTask = function () {
 // Method to delete task
 // If task is assigned to someone it can't be deleted
 // Otherwise cancel all the applied helpers
-taskSchema.methods.deleteTask = async function () {
+taskSchema.methods.deleteTask = async function (this: ITask) {
   if (this.assignedHelper) {
     throw new BadRequestError({
       code: 400,
@@ -116,6 +116,7 @@ taskSchema.methods.deleteTask = async function () {
       throw error;
     }
   }
+  await this.deleteOne();
 };
 
 const Task = model<ITask>('Task', taskSchema);
