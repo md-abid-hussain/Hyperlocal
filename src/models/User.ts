@@ -1,5 +1,5 @@
 import { Schema, model, Document } from 'mongoose';
-import PointSchema from './pointSchema';
+import PointSchema from './PointSchema';
 import Task from './Task';
 import { BadRequestError } from '../errors/CustomError';
 
@@ -13,8 +13,10 @@ interface IUser extends Document {
   email: string;
   username: string;
   password: string;
-  location?: ILocation;
+  location: ILocation;
   isActive: boolean;
+  totalHelperRated: number;
+  totalRating: number;
   deleteAccount(this: IUser): Promise<void>;
 }
 
@@ -28,6 +30,8 @@ const userSchema = new Schema<IUser>(
       type: PointSchema,
     },
     isActive: { type: Boolean, default: true },
+    totalHelperRated: { type: Number, default: 0 },
+    totalRating: { type: Number, default: 0 },
   },
   { timestamps: true },
 );
