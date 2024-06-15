@@ -17,7 +17,7 @@ router.route('/')
     .delete(userAllowed,taskController.deleteTask)
 
 router.route('/apply') 
-    .post(helperAllowed,taskController.applyForTask)
+    .patch(helperAllowed,taskController.applyForTask)
     .delete(helperAllowed,taskController.cancelApplication)
 
 router.route('/categories')
