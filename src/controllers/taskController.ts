@@ -23,7 +23,7 @@ const getAllTask = async (req: Request, res: Response) => {
 // @route POST /tasks
 // @access Private
 const createTask = async (req: Request, res: Response) => {
-  const { title, description, category, latitude, longitude, specialInstructions } = req.body;
+  const { title, description, category, latitude, longitude, specialInstructions, budget } = req.body;
   const owner = res.locals.id;
 
   if (!title || !description || !category || !owner || !latitude || !longitude) {
@@ -58,6 +58,14 @@ const createTask = async (req: Request, res: Response) => {
     });
   }
 
+  if (budget && (isNaN(Number(budget)) || budget < 0)) {
+    throw new BadRequestError({
+      code: 400,
+      message: 'Invalid budget value',
+      context: { budget },
+    });
+  }
+
   const newTask = await Task.create({
     title,
     description,
@@ -67,6 +75,7 @@ const createTask = async (req: Request, res: Response) => {
       coordinates: [latitude, longitude],
     },
     owner,
+    budget: budget || 0,
   });
 
   if (specialInstructions && Array.isArray(specialInstructions) && specialInstructions.length > 0) {
@@ -81,7 +90,7 @@ const createTask = async (req: Request, res: Response) => {
 // @route PATCH /tasks
 // @access Private
 const updateTask = async (req: Request, res: Response) => {
-  const { taskId, title, description, category, latitude, longitude, status, specialInstructions } = req.body;
+  const { taskId, title, description, category, budget, latitude, longitude, status, specialInstructions } = req.body;
   const owner = res.locals.id;
 
   if (!taskId) {
@@ -108,14 +117,28 @@ const updateTask = async (req: Request, res: Response) => {
     });
   }
 
+  if (budget && (isNaN(Number(budget)) || budget < 0)) {
+    throw new BadRequestError({
+      code: 400,
+      message: 'Invalid budget value',
+      context: { budget },
+    });
+  }
+
   if (title) {
     task.title = title;
   }
+
   if (description) {
     task.description = description;
   }
+
   if (category) {
     task.category = category;
+  }
+
+  if (budget) {
+    task.budget = budget;
   }
 
   if (latitude && longitude) {
@@ -129,7 +152,7 @@ const updateTask = async (req: Request, res: Response) => {
 
     task.location = {
       type: 'Point',
-      coordinates: [longitude, latitude],
+      coordinates: [latitude, longitude],
     };
   }
 
