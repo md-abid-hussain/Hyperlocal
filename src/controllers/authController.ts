@@ -5,6 +5,7 @@ import Helper from '../models/Helper';
 import User from '../models/User';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import { addSendEmailVerificationJob } from '../queues/emailQueue';
 
 export interface ITokenPayload {
   id: Schema.Types.ObjectId;
@@ -58,18 +59,22 @@ const register = async (req: Request, res: Response) => {
       username,
       password: hashedPassword,
     });
-
-    return res.json({ message: 'Helper created successfully' });
+  } else {
+    await User.create({
+      name,
+      email,
+      username,
+      password: hashedPassword,
+    });
   }
 
-  await User.create({
-    name,
-    email,
-    username,
-    password: hashedPassword,
+  await addSendEmailVerificationJob({
+    to: email,
+    subject: 'Email Verification',
+    text: 'Please verify your email',
   });
 
-  return res.json({ message: 'User created' });
+  return res.json({ message: `${isHelper ? 'Helper' : 'User'} created successfully` });
 };
 
 // @desc Login
