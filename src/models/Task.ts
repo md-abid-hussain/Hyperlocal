@@ -5,7 +5,7 @@ import Helper from './Helper';
 
 interface ILocation {
   type: string;
-  coordinates: number[];
+  coordinates: [number, number];
 }
 
 interface ITask extends Document {
